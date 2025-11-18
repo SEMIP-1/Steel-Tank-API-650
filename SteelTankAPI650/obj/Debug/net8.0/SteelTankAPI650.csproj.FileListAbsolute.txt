@@ -32,3 +32,4 @@ E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\refint\St
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.pdb
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.genruntimeconfig.cache
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\ref\SteelTankAPI650.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.sourcelink.json
