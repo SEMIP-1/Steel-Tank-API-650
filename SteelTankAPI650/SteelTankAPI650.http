@@ -1,0 +1,6 @@
+@SteelTankAPI650_HostAddress = http://localhost:5276
+
+GET {{SteelTankAPI650_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
