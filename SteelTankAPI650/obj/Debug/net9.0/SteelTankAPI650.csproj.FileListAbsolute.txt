@@ -8,6 +8,9 @@ E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net9.0\SteelTank
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net9.0\SteelTankAPI650.pdb
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net9.0\Microsoft.OpenApi.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net9.0\SteelTankAPI650.csproj.AssemblyReference.cache
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net9.0\rpswa.dswa.cache.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net9.0\SteelTankAPI650.GeneratedMSBuildEditorConfig.editorconfig
