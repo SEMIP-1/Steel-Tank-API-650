@@ -1,379 +1,438 @@
 using SteelTankAPI650.Models;
+using SteelTankAPI650.Services.Config;
+using SteelTankAPI650.Models.Config;
+
 
 namespace SteelTankAPI650.Services.Shell
 {
     public class ShellDesignService : IShellDesignService
     {
-        // -----------------------------------------------------------
-        // PUBLIC COSTRUCTOR
-        #region CONSTRUCTOR
+        private readonly IDesignDataRepository _repo;
+
+        public ShellDesignService(IDesignDataRepository repo)
+        {
+            _repo = repo;
+        }
+
+        // ============================================================
+        //  MATERIAL ACCESS HELPER (Fixes all null warnings)
+        // ============================================================
+        private MaterialDefinition Mat(ShellCourse c)
+        {
+            if (c.Material == null)
+                throw new Exception($"Material not loaded for course {c.CourseNumber}");
+
+            return c.Material;
+        }
+
+        // ============================================================
+        // PUBLIC MAIN FUNCTION (entire tank)
+        // ============================================================
         public ShellDesignResult CalculateShell(ShellDesignInput input)
         {
             var result = new ShellDesignResult();
 
-            // Sort courses from bottom to top
-            var courses = input.ShellCourses
-                               .OrderBy(c => c.CourseNumber)
-                               .ToList();
-
-            // Compute elevations
-            ComputeCourseElevations(courses);
-
-            // FIRST COURSE (SPECIAL: One-Foot AND VDP)
-            var firstCourse = courses.First();
-            var firstResult = CalculateBottomCourse(firstCourse, input);
-            result.Courses.Add(firstResult);
-
-            // SECOND COURSE (Uses ratio rule 5.6.4.5)
-            if (courses.Count > 1)
+            // Resolve material from Excel DB
+            foreach (var c in input.ShellCourses)
             {
-                var secondCourse = courses[1];
-                var secondResult = CalculateSecondCourse(secondCourse, firstResult, input);
-                result.Courses.Add(secondResult);
+                var m = _repo.GetMaterial(c.MaterialGrade);
+                if (m == null)
+                    throw new Exception($"Material '{c.MaterialGrade}' not found in Excel.");
+
+                c.Material = m;
             }
 
-            // UPPER COURSES (5.6.4.6 & 5.6.4.7)
+            var courses = input.ShellCourses
+                .OrderBy(c => c.CourseNumber)
+                .ToList();
+
+            ComputeCourseElevations(courses);
+
+            // FIRST COURSE
+            var r1 = CalculateBottomCourse(courses[0], input);
+            result.Courses.Add(r1);
+
+            // SECOND COURSE
+            if (courses.Count > 1)
+            {
+                var r2 = CalculateSecondCourse(courses[1], r1, input);
+                result.Courses.Add(r2);
+            }
+
+            // UPPER COURSES
             for (int i = 2; i < courses.Count; i++)
             {
-                var upperResult = CalculateUpperCourse(courses[i], result.Courses[i - 1], input);
-                result.Courses.Add(upperResult);
+                var r = CalculateUpperCourse(courses[i], result.Courses[i - 1], input);
+                result.Courses.Add(r);
             }
 
             return result;
         }
-        #endregion
-        
-        // -----------------------------------------------------------
-        // INTERNAL CALCULATION CORE
-        #region CALCULATION CORE
+
+        // ============================================================
+        //  ELEVATIONS
+        // ============================================================
         private void ComputeCourseElevations(List<ShellCourse> courses)
         {
             double current = 0.0;
+
             foreach (var c in courses)
             {
-                c.BottomElevation = current;           // store in new property
-                c.TopElevation = current + c.Height;   // store in new property
+                c.BottomElevation = current;
+                c.TopElevation = current + c.Height;
                 current = c.TopElevation;
             }
         }
-        #endregion
-        
-        // -----------------------------------------------------------
-        // COURSE CALCULATIONS
-        #region COURSE CALCULATIONS
-        // FIRST COURSE
+
+        // ============================================================
+        //  FIRST COURSE — One-Foot + VDP
+        // ============================================================
         private ShellCourseResult CalculateBottomCourse(ShellCourse c, ShellDesignInput input)
         {
+            var m = Mat(c);
+
             var result = new ShellCourseResult
             {
                 CourseNumber = c.CourseNumber,
                 Height = c.Height,
-                Material = c.Material.Grade
+                Material = m.Grade
             };
 
-            // ONE-FOOT method td & tt
             double td_1f = Td_OneFoot(input, c);
             double tt_1f = Tt_OneFoot(input, c);
 
-            // VDP method td & tt
             double td_vdp = Td_VDP_Bottom(input, c);
             double tt_vdp = Tt_VDP_Bottom(input, c);
 
             result.Td_OneFoot = td_1f;
             result.Tt_OneFoot = tt_1f;
-
             result.Td_Variable = td_vdp;
             result.Tt_Variable = tt_vdp;
 
-            // Governing design thickness
-            result.RequiredThickness = Math.Max(td_1f, td_vdp);
-            result.TestThickness = Math.Max(tt_1f, tt_vdp);
+            double td_req = Math.Max(td_1f, td_vdp);
+            double tt_req = Math.Max(tt_1f, tt_vdp);
+
+            result.RequiredThickness = td_req;
+            result.TestThickness = tt_req;
 
             result.GoverningMethod =
-                (result.RequiredThickness == td_1f) ? "One-Foot Method" : "Variable Design Point (VDP)";
+                (td_req == td_1f ? "One-Foot Method" : "Variable Design Point (VDP)");
+
+            ApplyMinThickness(input, c, result);
+            ApplyRounding(result);
+            DetermineFinalAdoption(result);
 
             return result;
         }
 
-        // SECOND COURSE (ratio method)
-        private ShellCourseResult CalculateSecondCourse(ShellCourse c, ShellCourseResult bottom, ShellDesignInput input)
+        // ============================================================
+        //  SECOND COURSE — Ratio Rule
+        // ============================================================
+        private ShellCourseResult CalculateSecondCourse(
+            ShellCourse c, ShellCourseResult bottom, ShellDesignInput input)
         {
+            var m = Mat(c);
+
             var result = new ShellCourseResult
             {
                 CourseNumber = c.CourseNumber,
                 Height = c.Height,
-                Material = c.Material.Grade
+                Material = m.Grade
             };
 
-            // --- Common geometric values ---
-            double D = input.Diameter;                  // m
-            double r_mm = (D / 2.0) * 1000.0;           // mm
-            double h1_mm = bottom.Height * 1000.0;      // bottom course height in mm
+            double D = input.Diameter;
+            double r_mm = (D / 2.0) * 1000.0;
+            double h1_mm = bottom.Height * 1000.0;
 
-            // Bottom course corroded thicknesses
             double CA = input.CorrosionAllowance;
 
-            // Design corroded thickness t1 (bottom)
-            double t1d_corroded = Math.Max(bottom.RequiredThickness - CA, 0.0);
+            double t1d = Math.Max(bottom.RequiredThickness - CA, 0);
+            double t1t = bottom.TestThickness;
 
-            // Test corroded thickness t1t (bottom) – already no CA
-            double t1t_corroded = bottom.TestThickness;
+            double R = h1_mm / Math.Sqrt(r_mm * t1t);
 
-            // Ratio R = h1 / sqrt(r * t1t)
-            double R_design = h1_mm / Math.Sqrt(r_mm * t1t_corroded);
+            double t2a_d = ComputeUpperCoursePrelimDesign(input, t1d, c);
+            double t2a_t = ComputeUpperCoursePrelimTest(input, t1t, c);
 
-            // ---------------- DESIGN CONDITION ----------------
-            // Preliminary second-course corroded thickness t2a (design)
-            double t2a_d_corroded = ComputeUpperCoursePrelimDesign(
-                input, lowerCorroded: t1d_corroded, course: c);
+            double t2d, t2t;
 
-            double t2d_corroded;
-
-            if (R_design <= 1.375)
+            if (R <= 1.375)
             {
-                t2d_corroded = t1d_corroded;
+                t2d = t1d;
+                t2t = t1t;
             }
-            else if (R_design >= 2.625)
+            else if (R >= 2.625)
             {
-                t2d_corroded = t2a_d_corroded;
+                t2d = t2a_d;
+                t2t = t2a_t;
             }
             else
             {
-                double denom = 1.25 * Math.Sqrt(r_mm * t1t_corroded);
+                double denom = 1.25 * Math.Sqrt(r_mm * t1t);
                 double factor = 2.1 - (h1_mm / denom);
-                t2d_corroded = t2a_d_corroded + (t1d_corroded - t2a_d_corroded) * factor;
+
+                t2d = t2a_d + (t1d - t2a_d) * factor;
+                t2t = t2a_t + (t1t - t2a_t) * factor;
             }
 
-            // Add CA back to get required design thickness
-            double t2d_required = t2d_corroded + CA;
+            result.Td_Variable = Math.Round(t2d, 2);
+            result.Tt_Variable = Math.Round(t2t, 2);
 
-            // ---------------- TEST CONDITION ----------------
-            double t2a_t_corroded = ComputeUpperCoursePrelimTest(
-                input, lowerTestCorroded: t1t_corroded, course: c);
+            result.RequiredThickness = Math.Round(t2d + CA, 2);
+            result.TestThickness = Math.Round(t2t, 2);
 
-            double t2t_corroded;
+            result.GoverningMethod = "Second-course ratio rule (5.6.4.5)";
 
-            if (R_design <= 1.375)
-            {
-                t2t_corroded = t1t_corroded;
-            }
-            else if (R_design >= 2.625)
-            {
-                t2t_corroded = t2a_t_corroded;
-            }
-            else
-            {
-                double denom = 1.25 * Math.Sqrt(r_mm * t1t_corroded);
-                double factor = 2.1 - (h1_mm / denom);
-                t2t_corroded = t2a_t_corroded + (t1t_corroded - t2a_t_corroded) * factor;
-            }
-
-            double t2t_required = t2t_corroded; // no CA for test thickness
-
-            // Fill result object
-            result.Td_Variable = Math.Round(t2d_corroded, 2);
-            result.Tt_Variable = Math.Round(t2t_corroded, 2);
-            result.RequiredThickness = Math.Round(t2d_required, 2);
-            result.TestThickness = Math.Round(t2t_required, 2);
-            result.GoverningMethod = "Second-course ratio method (API 650 5.6.4.5)";
+            ApplyMinThickness(input, c, result);
+            ApplyRounding(result);
+            DetermineFinalAdoption(result);
 
             return result;
         }
 
-
-        // UPPER COURSES (x1,x2,x3)
-        private ShellCourseResult CalculateUpperCourse(ShellCourse c, ShellCourseResult lower, ShellDesignInput input)
+        // ============================================================
+        //  UPPER COURSES — API 650 5.6.4.6–7
+        // ============================================================
+        private ShellCourseResult CalculateUpperCourse(
+            ShellCourse c, ShellCourseResult lower, ShellDesignInput input)
         {
+            var m = Mat(c);
+
             var result = new ShellCourseResult
             {
                 CourseNumber = c.CourseNumber,
                 Height = c.Height,
-                Material = c.Material.Grade
+                Material = m.Grade
             };
 
-            // FULL API 650 §5.6.4.6–5.6.4.7 logic will be inserted here
+            double D = input.Diameter;
+            double r_mm = (D / 2.0) * 1000.0;
+            double CA = input.CorrosionAllowance;
+
+            double Sd = m.Sd_MPa;
+            double St = Sd * m.StMultiplier;
+
+            double H = input.LiquidLevel - c.TopElevation;
+            if (H < 0) H = 0;
+
+            double tL_d = Math.Max(lower.RequiredThickness - CA, 0);
+            double tL_t = lower.TestThickness;
+
+            double tu_d = tL_d;
+            for (int i = 0; i < 3; i++)
+                tu_d = UpperCourseIter(D, r_mm, H, tu_d, tL_d, input.SpecificGravity, Sd);
+
+            double tu_t = tL_t;
+            for (int i = 0; i < 3; i++)
+                tu_t = UpperCourseIter(D, r_mm, H, tu_t, tL_t, input.TestSpecificGravity, St);
+
+            result.Td_Variable = Math.Round(tu_d, 2);
+            result.Tt_Variable = Math.Round(tu_t, 2);
+
+            result.RequiredThickness = Math.Round(tu_d + CA, 2);
+            result.TestThickness = Math.Round(tu_t, 2);
+
+            result.GoverningMethod = "Upper course VDP (5.6.4.6–7)";
+
+            ApplyMinThickness(input, c, result);
+            ApplyRounding(result);
+            DetermineFinalAdoption(result);
 
             return result;
         }
-        #endregion
-        
-        // -----------------------------------------------------------
-        // FORMULA HELPERS (PLACEHOLDERS — WE WILL FILL NEXT)
-        #region FORMULAHELPERS
-        // --------------------------------------------
-        // API 650 §5.6.3.2 — ONE-FOOT METHOD (SI Units)
-        // --------------------------------------------
-        // Design thickness using One-Foot method
+
+        private double UpperCourseIter(double D, double r_mm, double H, double tu,
+            double tL, double SG, double S)
+        {
+            double K = tL / tu;
+            double C = (Math.Sqrt(K) * (K - 1)) / (1 + Math.Pow(K, 1.5));
+
+            double x1 = 0.61 * Math.Sqrt(r_mm * tu) + 320 * C * H;
+            double x2 = 1000 * C * H;
+            double x3 = 1.22 * Math.Sqrt(r_mm * tu);
+
+            double x = Math.Min(x1, Math.Min(x2, x3));
+
+            return (4.9 * D * (H - x / 1000.0) * SG) / S;
+        }
+
+        // ============================================================
+        //  FORMULA HELPERS (One-Foot + VDP)
+        // ============================================================
         private double Td_OneFoot(ShellDesignInput input, ShellCourse c)
         {
-            // H = liquid level above bottom (meters)
+            var m = Mat(c);
+
             double H = input.LiquidLevel;
+            double Hred = Math.Max(H - 0.3048, 0.0);
 
-            // Reduced head = (H - 0.3 m)
-            double H_reduced = Math.Max(0.0, H - 0.3048);
-
-            // D = tank diameter (meters)
-            double D = input.Diameter;
-
-            // G = specific gravity
-            double G = input.SpecificGravity;
-
-            // S = allowable design stress (MPa)
-            double Sd = c.Material.AllowableStress;
-
-            // CA = corrosion allowance (mm)
-            double CA = input.CorrosionAllowance;
-
-            // API equation:
-            // td = [4.9 · D · (H−0.3) · G] / Sd   + CA
-            double td = (4.9 * D * H_reduced * G) / Sd;
-
-            // Result in mm
-            return td + CA;
+            return (4.9 * input.Diameter * Hred * input.SpecificGravity) / m.Sd_MPa
+                   + input.CorrosionAllowance;
         }
-        // Hydrostatic test thickness using One-Foot method
+
         private double Tt_OneFoot(ShellDesignInput input, ShellCourse c)
         {
+            var m = Mat(c);
+
             double H = input.LiquidLevel;
-            double H_reduced = Math.Max(0.0, H - 0.3048);
-            double D = input.Diameter;
+            double Hred = Math.Max(H - 0.3048, 0.0);
 
-            // Test SG
-            double Gt = input.TestSpecificGravity;
-
-            // Test stress = Sd × multiplier (per Annex M)
-            double Sd = c.Material.AllowableStress;
-            double St = Sd * input.TestStressMultiplier;
-
-            // tt = [4.9 · D · (H−0.3) · Gt] / St
-            double tt = (4.9 * D * H_reduced * Gt) / St;
-
-            return tt; // no CA added for test thickness
+            return (4.9 * input.Diameter * Hred * input.TestSpecificGravity)
+                   / (m.Sd_MPa * m.StMultiplier);
         }
-        // -----------------------------------------------------------
-        // API 650 §5.6.4.4 — VARIABLE DESIGN POINT METHOD (BOTTOM COURSE)
-        // -----------------------------------------------------------
-        // Design case VDP thickness
+
         private double Td_VDP_Bottom(ShellDesignInput input, ShellCourse c)
         {
-            double D = input.Diameter;           // tank diameter in m
-            double H = input.LiquidLevel;        // liquid height in m
-            double G = input.SpecificGravity;    // design SG
-            double Sd = c.Material.AllowableStress; // allowable design stress (MPa)
-            double CA = input.CorrosionAllowance;   // corrosion allowance (mm)
+            var m = Mat(c);
 
-            if (H <= 0) return 0;
-
-            // Term A = 1.06 - (0.0696 * D/H * sqrt(H*G/Sd))
-            double A = 1.06 - (0.0696 * (D / H) * Math.Sqrt((H * G) / Sd));
-
-            // Term B = (4.9 * H * D * G) / Sd
-            double B = (4.9 * H * D * G) / Sd;
-
-            // Final thickness
-            double td = A * B + CA;
-
-            return td;
-        }
-        // Hydrostatic test case VDP thickness
-        private double Tt_VDP_Bottom(ShellDesignInput input, ShellCourse c)
-        {
             double D = input.Diameter;
             double H = input.LiquidLevel;
-            double Gt = input.TestSpecificGravity;   // test SG
-            double Sd = c.Material.AllowableStress;
-            double St = Sd * input.TestStressMultiplier; // test allowable stress
 
-            if (H <= 0) return 0;
+            double A = 1.06 - (0.0696 * (D / H) *
+                     Math.Sqrt((H * input.SpecificGravity) / m.Sd_MPa));
 
-            // Term A = 1.06 - (0.0696 * D/H * sqrt(H*Gt/St))
-            double A = 1.06 - (0.0696 * (D / H) * Math.Sqrt((H * Gt) / St));
+            double B = (4.9 * H * D * input.SpecificGravity) / m.Sd_MPa;
 
-            // Term B = (4.9 * H * D * Gt) / St
-            double B = (4.9 * H * D * Gt) / St;
-
-            // No CA added in test case
-            double tt = A * B;
-
-            return tt;
+            return A * B + input.CorrosionAllowance;
         }
-        
-        // --------------------------------------------------------------------
-        
-        // PRELIMINARY UPPER-COURSE THICKNESS FOR SECOND COURSE (DESIGN/TEST)
-        // Approximate implementation of API 650 5.6.4.6–5.6.4.7
-        // --------------------------------------------------------------------
 
-        // Design condition preliminary thickness (corroded) for upper course
-        private double ComputeUpperCoursePrelimDesign(ShellDesignInput input, double lowerCorroded, ShellCourse course)
+        private double Tt_VDP_Bottom(ShellDesignInput input, ShellCourse c)
         {
-            double D = input.Diameter;                   // m
-            double H = input.LiquidLevel - course.BottomElevation; // approximation
+            var m = Mat(c);
+
+            double D = input.Diameter;
+            double H = input.LiquidLevel;
+
+            double A = 1.06 - (0.0696 * (D / H) *
+                     Math.Sqrt((H * input.TestSpecificGravity)
+                     / (m.Sd_MPa * m.StMultiplier)));
+
+            double B = (4.9 * H * D * input.TestSpecificGravity)
+                      / (m.Sd_MPa * m.StMultiplier);
+
+            return A * B;
+        }
+
+        private double ComputeUpperCoursePrelimDesign(
+            ShellDesignInput input, double lowerCorroded, ShellCourse c)
+        {
+            var m = Mat(c);
+
+            double D = input.Diameter;
+            double H = input.LiquidLevel - c.BottomElevation;
             if (H <= 0) H = input.LiquidLevel;
 
             double G = input.SpecificGravity;
-            double Sd = course.Material.AllowableStress;
-
-            double r_mm = (D / 2.0) * 1000.0;            // mm
-
-            // Start with lower course thickness as initial guess
-            double tu = lowerCorroded;
-
-            for (int i = 0; i < 3; i++) // 3 trial iterations
-            {
-                double K = lowerCorroded / tu;
-                double C = (Math.Sqrt(K) * (K - 1.0)) / (1.0 + Math.Pow(K, 1.5));
-
-                double x1 = 0.61 * Math.Sqrt(r_mm * tu) + 320.0 * C * H;
-                double x2 = 1000.0 * C * H;
-                double x3 = 1.22 * Math.Sqrt(r_mm * tu);
-
-                double x = Math.Min(x1, Math.Min(x2, x3)); // mm
-
-                // tdx (corroded) from 5.6.4.7 (SI) without CA
-                double tdx_corroded = (4.9 * D * (H - x / 1000.0) * G) / Sd;
-
-                tu = tdx_corroded; // next trial
-            }
-
-            return tu;
-        }
-
-        // Test condition preliminary thickness (corroded) for upper course
-        private double ComputeUpperCoursePrelimTest(ShellDesignInput input, double lowerTestCorroded, ShellCourse course)
-        {
-            double D = input.Diameter;
-            double H = input.LiquidLevel - course.BottomElevation;
-            if (H <= 0) H = input.LiquidLevel;
-
-            double Gt = input.TestSpecificGravity;
-
-            double Sd = course.Material.AllowableStress;
-            double St = Sd * input.TestStressMultiplier;
-
+            double Sd = m.Sd_MPa;
             double r_mm = (D / 2.0) * 1000.0;
 
-            double tu = lowerTestCorroded;
+            double tu = lowerCorroded;
 
             for (int i = 0; i < 3; i++)
             {
-                double K = lowerTestCorroded / tu;
-                double C = (Math.Sqrt(K) * (K - 1.0)) / (1.0 + Math.Pow(K, 1.5));
+                double K = lowerCorroded / tu;
+                double C = (Math.Sqrt(K) * (K - 1)) /
+                           (1.0 + Math.Pow(K, 1.5));
 
-                double x1 = 0.61 * Math.Sqrt(r_mm * tu) + 320.0 * C * H;
-                double x2 = 1000.0 * C * H;
+                double x1 = 0.61 * Math.Sqrt(r_mm * tu) + 320 * C * H;
+                double x2 = 1000 * C * H;
                 double x3 = 1.22 * Math.Sqrt(r_mm * tu);
 
                 double x = Math.Min(x1, Math.Min(x2, x3));
 
-                double ttx_corroded = (4.9 * D * (H - x / 1000.0) * Gt) / St;
-
-                tu = ttx_corroded;
+                tu = (4.9 * D * (H - x / 1000.0) * G) / Sd;
             }
 
             return tu;
         }
 
-        #endregion
+        private double ComputeUpperCoursePrelimTest(
+            ShellDesignInput input, double lowerCorroded, ShellCourse c)
+        {
+            var m = Mat(c);
+
+            double D = input.Diameter;
+            double H = input.LiquidLevel - c.BottomElevation;
+            if (H <= 0) H = input.LiquidLevel;
+
+            double Gt = input.TestSpecificGravity;
+            double Sd = m.Sd_MPa;
+            double St = Sd * m.StMultiplier;
+            double r_mm = (D / 2.0) * 1000.0;
+
+            double tu = lowerCorroded;
+
+            for (int i = 0; i < 3; i++)
+            {
+                double K = lowerCorroded / tu;
+                double C = (Math.Sqrt(K) * (K - 1)) /
+                           (1.0 + Math.Pow(K, 1.5));
+
+                double x1 = 0.61 * Math.Sqrt(r_mm * tu) + 320 * C * H;
+                double x2 = 1000 * C * H;
+                double x3 = 1.22 * Math.Sqrt(r_mm * tu);
+
+                double x = Math.Min(x1, Math.Min(x2, x3));
+
+                tu = (4.9 * D * (H - x / 1000.0) * Gt) / St;
+            }
+
+            return tu;
+        }
+
+        // ============================================================
+        //   MINIMUM THICKNESS (Table 5.6a)
+        // ============================================================
+        private void ApplyMinThickness(
+            ShellDesignInput input, ShellCourse c, ShellCourseResult r)
+        {
+            var rule = _repo.MinShellThickness
+                .FirstOrDefault(x =>
+                    x.CourseNumber == c.CourseNumber &&
+                    input.Diameter <= x.MaxDiameterM);
+
+            if (rule != null)
+            {
+                if (r.RequiredThickness < rule.MinThicknessMM)
+                {
+                    r.Notes.Add($"Minimum thickness applied from Table 5.6a: {rule.MinThicknessMM} mm");
+                    r.RequiredThickness = rule.MinThicknessMM;
+                }
+            }
+        }
+
+        // ============================================================
+        //   PLATE ROUNDING
+        // ============================================================
+        private void ApplyRounding(ShellCourseResult r)
+        {
+            double[] plates = _repo.PlateSizes
+                .Select(p => p.ThicknessMM)
+                .OrderBy(x => x)
+                .ToArray();
+
+            double Round(double t)
+            {
+                foreach (var p in plates)
+                    if (t <= p) return p;
+
+                return Math.Ceiling(t);
+            }
+
+            r.RequiredThickness = Round(r.RequiredThickness);
+            r.TestThickness = Round(r.TestThickness);
+        }
+
+        // ============================================================
+        //   GOVERN FINAL THICKNESS
+        // ============================================================
+        private void DetermineFinalAdoption(ShellCourseResult r)
+        {
+            r.AdoptedThickness =
+                Math.Max(r.RequiredThickness, r.TestThickness);
+
+            if (r.TestThickness > r.RequiredThickness)
+                r.Notes.Add("Hydrostatic test thickness governed.");
+        }
     }
 }

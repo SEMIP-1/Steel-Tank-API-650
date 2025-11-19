@@ -20,6 +20,7 @@ namespace SteelTankAPI650.Models
         public double RequiredThickness { get; set; }    // governing td
         public double TestThickness { get; set; }        // governing tt
         public double AdoptedThickness { get; set; }
+        public List<string> Notes { get; set; } = new();
 
         public string GoverningMethod { get; set; } = null!;
     }

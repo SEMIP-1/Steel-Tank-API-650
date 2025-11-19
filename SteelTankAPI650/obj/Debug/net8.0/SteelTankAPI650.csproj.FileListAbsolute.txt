@@ -1,15 +1,24 @@
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\appsettings.Development.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\appsettings.json
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\SteelTankAPI650.staticwebassets.runtime.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\SteelTankAPI650.staticwebassets.endpoints.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\SteelTankAPI650.exe
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\SteelTankAPI650.deps.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\SteelTankAPI650.runtimeconfig.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\SteelTankAPI650.dll
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\SteelTankAPI650.pdb
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\ClosedXML.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\ClosedXML.Parser.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\DocumentFormat.OpenXml.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\DocumentFormat.OpenXml.Framework.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\ExcelNumberFormat.dll
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\Microsoft.OpenApi.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\RBush.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\SixLabors.Fonts.dll
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\Swashbuckle.AspNetCore.Swagger.dll
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\bin\Debug\net8.0\System.IO.Packaging.dll
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.csproj.AssemblyReference.cache
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\rpswa.dswa.cache.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.GeneratedMSBuildEditorConfig.editorconfig
@@ -18,6 +27,7 @@ E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTank
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.csproj.CoreCompileInputs.cache
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.MvcApplicationPartsAssemblyInfo.cs
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.MvcApplicationPartsAssemblyInfo.cache
+E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.sourcelink.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\rjimswa.dswa.cache.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
@@ -32,4 +42,3 @@ E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\refint\St
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.pdb
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.genruntimeconfig.cache
 E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\ref\SteelTankAPI650.dll
-E:\3. Applications\Steel Tank API 650\SteelTankAPI650\obj\Debug\net8.0\SteelTankAPI650.sourcelink.json
