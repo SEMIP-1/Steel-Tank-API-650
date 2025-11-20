@@ -2,6 +2,7 @@
 #region Using Directives
 using SteelTankAPI650.Services.Shell;
 using SteelTankAPI650.Services.Config;
+using SteelTankAPI650.Services.Bottom;
 
 #endregion
 //---------------------------------------------------------------
@@ -16,6 +17,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IDesignDataRepository, ExcelDesignDataRepository>();
 // Register new shell design service
 builder.Services.AddScoped<IShellDesignService, ShellDesignService>();
+// Register bottom plate design service
+builder.Services.AddScoped<IBottomPlateDesignService, BottomPlateDesignService>();
 
 var app = builder.Build();
 
@@ -28,6 +31,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.MapControllers();
-app.MapFallbackToFile("/index.html");
+app.MapFallbackToFile("index.html");
 
 app.Run();

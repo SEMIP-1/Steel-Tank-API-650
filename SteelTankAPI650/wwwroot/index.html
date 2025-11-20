@@ -1,78 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8">
     <title>API 650 Designer</title>
 
+    <!-- Bootstrap -->
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/site.css" />
+
+    <!-- Site CSS -->
+    <link rel="stylesheet" href="css/site.css">
 </head>
 
 <body>
 
-    <!-- TOP NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-        <div class="container-fluid">
+    <!-- ===================== TOP HEADER ===================== -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3 shadow-sm">
+        <button id="sidebarToggle" class="btn btn-outline-light me-3">☰</button>
 
-            <!-- Sidebar Toggle -->
-            <button class="btn btn-outline-light me-3" id="sidebarToggle">☰</button>
+        <a class="navbar-brand" href="#/home">API 650 Designer</a>
 
-            <a class="navbar-brand" href="#/shell">
-                API 650 Designer
-            </a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
 
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#/materials">Materials</a>
+                </li>
 
-                    <!-- TOP BAR: DATABASE / SETTINGS / FUTURE USER HANDLING -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="#/Materials">Materials</a>
-                    </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#/plates">Plate Thickness</a>
+                </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link" href="#/settings">Settings</a>
-                    </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#/settings">Settings</a>
+                </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="window.print()">Print</a>
-                    </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="window.print()">Print</a>
+                </li>
 
-                </ul>
-            </div>
-
+            </ul>
         </div>
     </nav>
 
-    <!-- SIDEBAR + CONTENT -->
-    <div id="layout" class="d-flex">
+    <!-- ====================== LAYOUT ======================== -->
+    <div class="d-flex">
 
-        <!-- LEFT SIDEBAR: DESIGN PAGES ONLY -->
-        <aside id="sidebar" class="bg-light border-end">
-            <div class="list-group list-group-flush sidebar-menu">
+        <!-- ===== SIDEBAR ===== -->
+        <aside id="sidebar" class="bg-light border-end" style="width:240px; min-height:100vh;">
+            <div class="list-group list-group-flush">
 
-                <div class="list-group-item fw-bold small text-uppercase text-secondary">
+                <div class="list-group-item fw-bold text-secondary small text-uppercase">
                     Design
                 </div>
 
-                <a href="/shell" class="list-group-item list-group-item-action">
-                    Shell Design
-                </a>
-
-                <!-- Future: Bottom, Roof, Wind, Seismic, etc. -->
+                <a href="#/home" class="list-group-item list-group-item-action">Home</a>
+                <a href="#/shell" class="list-group-item list-group-item-action">Shell Design</a>
+                <a href="#/bottom" class="list-group-item list-group-item-action">Bottom Plate</a>
 
             </div>
         </aside>
 
-        <!-- MAIN PAGE CONTENT -->
-        <main id="mainContent" class="flex-grow-1 p-4">
-            <div id="app-content"></div>
+        <!-- ===== CONTENT AREA ===== -->
+        <main id="app-content" class="p-4 flex-grow-1">
+            <!-- Pages load here -->
         </main>
 
     </div>
 
+    <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Layout toggle script -->
     <script src="js/layout.js"></script>
+
+    <!-- Router -->
     <script src="js/router.js"></script>
 
 </body>

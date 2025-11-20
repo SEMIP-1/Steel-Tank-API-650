@@ -1,0 +1,76 @@
+<div class="container">
+
+    <h2 class="mb-3">Materials Database</h2>
+    <p class="text-muted">Add, edit, or delete API 650 material grades.</p>
+
+    <!-- Add Material Button -->
+    <button class="btn btn-primary mb-3" id="btn-add-material">
+        + Add Material
+    </button>
+
+    <!-- Materials Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Grade</th>
+                    <th>Sd (MPa)</th>
+                    <th>St Multiplier</th>
+                    <th>Density</th>
+                    <th>Note</th>
+                    <th style="width:160px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="materials-table"></tbody>
+        </table>
+    </div>
+
+    <!-- Material Modal -->
+    <div class="modal fade" id="materialModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="materialModalTitle">Add Material</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" id="mat-original-grade">
+
+                    <div class="mb-3">
+                        <label class="form-label">Grade</label>
+                        <input id="mat-grade" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Sd (MPa)</label>
+                        <input id="mat-sd" type="number" step="0.01" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">St Multiplier</label>
+                        <input id="mat-st" type="number" step="0.01" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Density</label>
+                        <input id="mat-density" type="number" step="0.01" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Note</label>
+                        <textarea id="mat-note" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="btn-save-material" class="btn btn-success">Save</button>
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>

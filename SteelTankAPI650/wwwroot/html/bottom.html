@@ -1,0 +1,60 @@
+<div class="container" id="bottom-page">
+    <h2 class="page-title">Bottom Plate Design</h2>
+    <p class="page-subtitle">
+        UI hooked to <code>/api/bottomplate</code>. You may need to align the payload
+        with <code>BottomPlateInput</code> properties.
+    </p>
+
+    <div class="card mb-3">
+        <div class="card-header">Basic Data</div>
+        <div class="card-body row g-3">
+
+            <div class="col-md-3">
+                <label class="form-label">Tank Diameter D (m)</label>
+                <input id="bp-diameter" type="number" step="0.01" class="form-control">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Design Liquid Height H (m)</label>
+                <input id="bp-height" type="number" step="0.01" class="form-control">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Specific Gravity</label>
+                <input id="bp-sg" type="number" step="0.01" value="1.0" class="form-control">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Corrosion Allowance (mm)</label>
+                <input id="bp-ca" type="number" step="0.1" value="0" class="form-control">
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">First Shell Course / Annular Data</div>
+        <div class="card-body row g-3">
+
+            <div class="col-md-4">
+                <label class="form-label">1st Shell Thickness t1 (mm)</label>
+                <input id="bp-t1" type="number" step="0.1" class="form-control">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Allowable stress Sd (MPa)</label>
+                <input id="bp-sd" type="number" step="0.1" class="form-control">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Test stress St (MPa)</label>
+                <input id="bp-st" type="number" step="0.1" class="form-control">
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-bottom-calc" type="button">
+        Calculate Bottom
+    </button>
+
+    <div id="bottom-result" class="mt-4"></div>
+</div>

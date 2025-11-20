@@ -1,149 +1,234 @@
-// =======================
-// SHELL DESIGN PAGE JS
-// =======================
+// ============================================================================
+// SHELL DESIGN PAGE SCRIPT
+// ============================================================================
 
-const materialsApi = "/api/materials";
-let materialsList = [];
+// Global localStorage key
+const SHELL_STATE_KEY = "Api650_ShellState";
 
-// When shell page loads
-document.addEventListener("DOMContentLoaded", () => {
-    if (!document.getElementById("btn-add-course")) return; // not on this page
+// Page State (loaded/saved to localStorage)
+let shellState = {
+    diameter: "",
+    height: "",
+    sg: "1.0",
+    ca: "2",
+    courses: [] // { height: "", grade: "" }
+};
 
-    loadMaterials();
-    setupShellEvents();
-});
+// ============================================================================
+// PAGE INITIALIZATION
+// ============================================================================
+window.initShellPage = async function () {
 
-// Load materials for dropdowns
-function loadMaterials() {
-    fetch(materialsApi)
-        .then(r => r.json())
-        .then(data => {
-            materialsList = data;
-        });
-}
+    // 1) Load state from localStorage
+    loadShellState();
 
-function setupShellEvents() {
-    document.getElementById("btn-add-course").addEventListener("click", addCourseRow);
-    document.getElementById("btn-shell-calc").addEventListener("click", calculateShell);
-}
+    // 2) Load materials (for dropdowns)
+    const materials = await loadMaterials();
 
-let courseCounter = 0;
+    // 3) Restore tank parameter inputs
+    document.getElementById("shell-diameter").value = shellState.diameter;
+    document.getElementById("shell-height").value   = shellState.height;
+    document.getElementById("shell-sg").value       = shellState.sg;
+    document.getElementById("shell-ca").value       = shellState.ca;
 
-function addCourseRow() {
-    courseCounter++;
+    // 4) Rebuild course table
+    rebuildCourseTable(materials);
 
-    const tbody = document.getElementById("course-body");
-
-    const row = document.createElement("tr");
-    row.innerHTML = `
-        <td>${courseCounter}</td>
-
-        <td>
-            <input class="form-control course-height" type="number" step="0.01">
-        </td>
-
-        <td>
-            <select class="form-control course-material">
-                <option value="">-- Select Material --</option>
-                ${materialsList.map(m => `<option value="${m.grade || m.Grade}">${m.grade || m.Grade}</option>`).join("")}
-            </select>
-        </td>
-
-        <td>
-            <button class="btn btn-sm btn-danger" onclick="removeCourseRow(this)">X</button>
-        </td>
-    `;
-
-    tbody.appendChild(row);
-}
-
-function removeCourseRow(btn) {
-    btn.closest("tr").remove();
-}
-
-// ================================
-// CALL SHELL DESIGN API
-// ================================
-function calculateShell() {
-    const diameter = parseFloat(document.getElementById("shell-diameter").value);
-    const height = parseFloat(document.getElementById("shell-height").value);
-    const sg = parseFloat(document.getElementById("shell-sg").value);
-    const ca = parseFloat(document.getElementById("shell-ca").value);
-
-    const courseRows = document.querySelectorAll("#course-body tr");
-    const courses = [];
-
-    let courseNumber = 1;
-    courseRows.forEach(row => {
-        const h = parseFloat(row.querySelector(".course-height").value);
-        const mat = row.querySelector(".course-material").value;
-
-        if (!h || !mat) return;
-
-        courses.push({
-            courseNumber: courseNumber++,
-            height: h,
-            materialGrade: mat
-        });
-    });
-
-    const payload = {
-        diameter: diameter,
-        liquidLevel: height,
-        specificGravity: sg,
-        testSpecificGravity: sg,
-        corrosionAllowance: ca,
-        jointEfficiency: 0.85,
-        testStressMultiplier: 0.6,
-        shellCourses: courses
+    // 5) Hook up buttons
+    document.getElementById("btn-add-course").onclick = () => {
+        shellState.courses.push({ height: "", grade: "" });
+        saveShellState();
+        rebuildCourseTable(materials);
     };
 
-    console.log("Sending shell design payload:", payload);
+    document.getElementById("btn-shell-calc").onclick = calculateShell;
+};
 
-    fetch("/api/shell/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    })
-        .then(r => r.json())
-        .then(result => displayResult(result))
-        .catch(err => alert("Error: " + err));
+// ============================================================================
+// LOAD MATERIALS FROM API
+// ============================================================================
+async function loadMaterials() {
+    try {
+        const res = await fetch("/api/materials");
+        return await res.json();
+    } catch (err) {
+        console.error("Material load failed:", err);
+        return [];
+    }
 }
 
-// ================================
-// DISPLAY RESULTS
-// ================================
-function displayResult(data) {
-    let html = `
-        <h4>Shell Design Results</h4>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Course</th>
-                    <th>Material</th>
-                    <th>Design t (mm)</th>
-                    <th>Test t (mm)</th>
-                    <th>Required (mm)</th>
-                    <th>Method</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+// ============================================================================
+// COURSE TABLE
+// ============================================================================
+function rebuildCourseTable(materials) {
+    const tbody = document.getElementById("course-body");
+    const template = document.getElementById("course-row-template");
 
-    data.courses.forEach(c => {
-        html += `
-            <tr>
-                <td>${c.courseNumber}</td>
-                <td>${c.material}</td>
-                <td>${c.td_Variable?.toFixed(2) ?? "-"}</td>
-                <td>${c.tt_Variable?.toFixed(2) ?? "-"}</td>
-                <td>${c.requiredThickness?.toFixed(2) ?? "-"}</td>
-                <td>${c.governingMethod}</td>
-            </tr>
-        `;
+    tbody.innerHTML = "";
+
+    shellState.courses.forEach((course, index) => {
+        const clone = template.content.cloneNode(true);
+
+        // Assign course number
+        clone.querySelector(".course-number").innerText = index + 1;
+
+        // Height
+        const heightInput = clone.querySelector(".course-height");
+        heightInput.value = course.height;
+        heightInput.onchange = (e) => {
+            course.height = e.target.value;
+            saveShellState();
+        };
+
+        // Material dropdown
+        const matSelect = clone.querySelector(".course-material");
+        matSelect.innerHTML = `<option value="">Select...</option>` +
+            materials.map(m => `
+                <option value="${m.grade}" ${course.grade === m.grade ? "selected" : ""}>
+                    ${m.grade}
+                </option>
+            `).join("");
+
+        matSelect.onchange = (e) => {
+            course.grade = e.target.value;
+            saveShellState();
+        };
+
+        // Remove button
+        clone.querySelector(".btn-remove-course").onclick = () => {
+            shellState.courses.splice(index, 1);
+            saveShellState();
+            rebuildCourseTable(materials);
+        };
+
+        tbody.appendChild(clone);
     });
+}
 
-    html += "</tbody></table>";
+// ============================================================================
+// STATE SAVE / LOAD
+// ============================================================================
+function saveShellState() {
+    shellState.diameter = document.getElementById("shell-diameter").value;
+    shellState.height   = document.getElementById("shell-height").value;
+    shellState.sg       = document.getElementById("shell-sg").value;
+    shellState.ca       = document.getElementById("shell-ca").value;
 
-    document.getElementById("shell-result").innerHTML = html;
+    localStorage.setItem(SHELL_STATE_KEY, JSON.stringify(shellState));
+}
+
+function loadShellState() {
+    const saved = localStorage.getItem(SHELL_STATE_KEY);
+    if (saved) {
+        shellState = JSON.parse(saved);
+    }
+}
+
+// ============================================================================
+// CALCULATE SHELL API CALL
+// ============================================================================
+async function calculateShell() {
+
+    saveShellState();
+
+    if (!shellState.diameter || !shellState.height) {
+        alert("Please enter diameter and liquid height.");
+        return;
+    }
+
+    if (shellState.courses.length === 0) {
+        alert("Add at least one shell course.");
+        return;
+    }
+
+    // Build payload
+    const payload = {
+        diameter: parseFloat(shellState.diameter),
+        liquidLevel: parseFloat(shellState.height),
+        specificGravity: parseFloat(shellState.sg),
+        corrosionAllowance: parseFloat(shellState.ca),
+        testSpecificGravity: 1.0,
+        jointEfficiency: 0.85,
+        testStressMultiplier: 0.6,
+        shellCourses: shellState.courses.map((c, i) => ({
+            courseNumber: i + 1,
+            height: parseFloat(c.height || 0),
+            materialGrade: c.grade
+        }))
+    };
+
+    try {
+        const res = await fetch("/api/shelldesign/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const t = await res.text();
+            throw new Error(t);
+        }
+
+        const data = await res.json();
+
+        renderShellResult(data);
+
+    } catch (err) {
+        console.error(err);
+        document.getElementById("shell-result").innerHTML =
+            `<div class="alert alert-danger">Error: ${err.message}</div>`;
+    }
+}
+
+// ============================================================================
+// RENDER RESULT TABLE
+// ============================================================================
+function renderShellResult(data) {
+    const resultDiv = document.getElementById("shell-result");
+
+    if (!data || !data.courses) {
+        resultDiv.innerHTML =
+            `<div class="alert alert-warning">No results returned.</div>`;
+        return;
+    }
+
+    let rows = data.courses.map(c => `
+        <tr>
+            <td>${c.courseNumber}</td>
+            <td>${c.height}</td>
+            <td>${c.material}</td>
+            <td>${c.td_OneFoot ?? ""}</td>
+            <td>${c.tt_OneFoot ?? ""}</td>
+            <td>${c.td_Variable ?? ""}</td>
+            <td>${c.tt_Variable ?? ""}</td>
+            <td>${c.requiredThickness}</td>
+            <td>${c.testThickness}</td>
+            <td>${c.governingMethod}</td>
+        </tr>
+        `).join("");
+
+    resultDiv.innerHTML = `
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Shell Calculation Results</div>
+            <div class="card-body p-0">
+                <table class="table table-bordered table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Course</th>
+                            <th>Height</th>
+                            <th>Material</th>
+                            <th>td (1-ft)</th>
+                            <th>tt (1-ft)</th>
+                            <th>td (VDP)</th>
+                            <th>tt (VDP)</th>
+                            <th>Required t (mm)</th>
+                            <th>Test t (mm)</th>
+                            <th>Governing</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
 }

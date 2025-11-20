@@ -1,47 +1,66 @@
+// wwwroot/js/router.js
+
 const routes = {
-    shell: "/pages/shell.html",
-    materials: "/pages/materials.html",
-    settings: "/pages/settings-placeholder.html"
+    home: {
+        html: "html/home.html",
+        script: "js/home.js",
+        init: "initHomePage"
+    },
+    shell: {
+        html: "html/shell.html",
+        script: "js/shell.js",
+        init: "initShellPage"
+    },
+    bottom: {
+        html: "html/bottom.html",
+        script: "js/bottom.js",
+        init: "initBottomPage"
+    },
+    materials: {
+        html: "html/materials.html",
+        script: "js/materials.js",
+        init: "initMaterialsPage"
+    }
 };
 
-async function loadPage() {
-    // hash like "#/shell" → "shell"
-    const hash = location.hash.replace("#/", "") || "shell";
-    const page = routes[hash];
+async function loadRoute() {
+    const hash = location.hash.replace("#/", "") || "home";
+    const route = routes[hash];
+    const container = document.getElementById("app-content");
 
-    // Unknown route
-    if (!page) {
-        document.getElementById("app-content").innerHTML =
-            `<div class="alert alert-danger">Page not found.</div>`;
+    if (!route) {
+        container.innerHTML = `<div class="alert alert-danger">Page not found.</div>`;
         return;
     }
 
-    // Load HTML fragment
-    let res = await fetch(page);
-    if (!res.ok) {
-        document.getElementById("app-content").innerHTML =
-            `<div class="alert alert-danger">Page not found.</div>`;
+    try {
+        const res = await fetch(route.html);
+        const html = await res.text();
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = `<div class="alert alert-danger">Failed to load page.</div>`;
         return;
     }
 
-    let html = await res.text();
-    document.getElementById("app-content").innerHTML = html;
+    await ensureScriptLoaded(route.script);
 
-    // Remove previous page script if any
-    const prevScript = document.getElementById("page-script");
-    if (prevScript) prevScript.remove();
+    if (route.init && typeof window[route.init] === "function") {
+        window[route.init]();
+    }
+}
 
-    // Load page-specific JS if exists
-    const scriptPath = `/js/${hash}.js`;
-    fetch(scriptPath).then(r => {
-        if (r.ok) {
-            const s = document.createElement("script");
-            s.src = scriptPath;
-            s.id = "page-script";
-            document.body.appendChild(s);
-        }
+function ensureScriptLoaded(src) {
+    return new Promise((resolve, reject) => {
+        const existing = Array.from(document.scripts).find(s => s.src.includes(src));
+        if (existing) return resolve();
+
+        const s = document.createElement("script");
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.body.appendChild(s);
     });
 }
 
-window.addEventListener("hashchange", loadPage);
-loadPage();   // <—— FIXED
+window.addEventListener("hashchange", loadRoute);
+window.addEventListener("load", loadRoute);

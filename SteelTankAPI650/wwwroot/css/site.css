@@ -1,31 +1,113 @@
+/* General layout */
 body {
     overflow-x: hidden;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* Sidebar layout */
-#sidebar {
-    width: 240px;
-    min-height: calc(100vh - 56px); /* 56px ~ navbar height */
-    transition: margin-left 0.2s ease;
-}
-
-#layout {
-    min-height: calc(100vh - 56px);
-}
-
-/* When collapsed, hide sidebar */
-#layout.sidebar-collapsed #sidebar {
-    margin-left: -240px;
-}
-
-/* Sidebar menu styling */
-.sidebar-menu .list-group-item {
-    border-radius: 0;
-    border-left: 0;
-    border-right: 0;
-}
-
-/* Make main content breathe a bit more */
-#mainContent {
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    min-height: calc(100vh - 56px); /* ~navbar height */
+    transition: margin-left 0.25s ease;
     background-color: #f8f9fa;
+}
+
+.sidebar.collapsed {
+    margin-left: -250px;
+}
+
+body.sidebar-collapsed #mainContent {
+    margin-left: 0;
+}
+
+/* Sidebar menu */
+.sidebar-menu .list-group-item {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    border: 0;
+    border-radius: 0;
+}
+
+.sidebar-menu .list-group-item-action.active {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+/* Content area */
+#mainContent {
+    transition: margin-left 0.25s ease;
+}
+
+/* Cards – modern style */
+.card {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.03);
+}
+
+/* Page titles */
+.page-title {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.page-subtitle {
+    margin-bottom: 1.25rem;
+    color: #6c757d;
+}
+
+/* THEME: LIGHT vs DARK (manual only) */
+body.theme-light {
+    background-color: #f3f4f6;
+    color: #212529;
+}
+
+body.theme-light .sidebar {
+    background-color: #f8f9fa;
+}
+
+body.theme-light #mainContent .card {
+    background-color: #ffffff;
+}
+
+/* Dark */
+body.theme-dark {
+    background-color: #111827;
+    color: #f9fafb;
+}
+
+body.theme-dark .sidebar {
+    background-color: #1f2933;
+    color: #f9fafb;
+}
+
+body.theme-dark .sidebar .list-group-item {
+    background-color: #1f2933;
+    color: #e5e7eb;
+}
+
+body.theme-dark .sidebar .list-group-item-action:hover {
+    background-color: #374151;
+}
+
+body.theme-dark .sidebar .list-group-item-action.active {
+    background-color: #0d6efd;
+}
+
+body.theme-dark #mainContent {
+    background-color: #111827;
+}
+
+body.theme-dark #mainContent .card {
+    background-color: #1f2933;
+    color: #e5e7eb;
+}
+
+/* Table styles adjust for dark */
+body.theme-dark table {
+    color: #e5e7eb;
+}
+
+body.theme-dark .table thead th {
+    background-color: #111827;
 }

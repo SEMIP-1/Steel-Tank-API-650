@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SteelTankAPI650")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+74069f21832fb1fafe66a748ab2712455d0c571d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+800470a628acf5c2ad6cbe759d17283ed4e70f2f")]
 [assembly: System.Reflection.AssemblyProductAttribute("SteelTankAPI650")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SteelTankAPI650")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

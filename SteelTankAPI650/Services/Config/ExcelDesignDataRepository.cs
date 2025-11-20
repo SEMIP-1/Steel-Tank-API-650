@@ -174,22 +174,39 @@ namespace SteelTankAPI650.Services.Config
         public void SaveChanges()
         {
             using var wb = new XLWorkbook(_excelPath);
-            var ws = wb.Worksheet("Materials");
+
+            // ================== MATERIALS SHEET ==================
+            var wsMat = wb.Worksheet("Materials");
 
             // Delete all rows except header
-            var rowsToDelete = ws.RowsUsed().Skip(1).ToList();
-            foreach (var r in rowsToDelete)   // renamed from "row" → "r"
-                r.Delete();
+            var matRows = wsMat.RowsUsed().Skip(1).ToList();
+            foreach (var row in matRows)
+                row.Delete();
 
-            int row = 2;
+            int rowMat = 2;
             foreach (var m in _materials)
             {
-                ws.Cell(row, 1).Value = m.Grade;
-                ws.Cell(row, 2).Value = m.Sd_MPa;
-                ws.Cell(row, 3).Value = m.StMultiplier;
-                ws.Cell(row, 4).Value = m.Density;
-                ws.Cell(row, 5).Value = m.Note;
-                row++;
+                wsMat.Cell(rowMat, 1).Value = m.Grade;
+                wsMat.Cell(rowMat, 2).Value = m.Sd_MPa;
+                wsMat.Cell(rowMat, 3).Value = m.StMultiplier;
+                wsMat.Cell(rowMat, 4).Value = m.Density;
+                wsMat.Cell(rowMat, 5).Value = m.Note;
+                rowMat++;
+            }
+
+            // ================== PLATE THICKNESSES SHEET ==================
+            // (Sheet name must match your Excel: "PlateThicknesses")
+            var wsPlate = wb.Worksheet("PlateThicknesses");
+
+            var plateRows = wsPlate.RowsUsed().Skip(1).ToList();
+            foreach (var row in plateRows)
+                row.Delete();
+
+            int rowPl = 2;
+            foreach (var p in _plateSizes)
+            {
+                wsPlate.Cell(rowPl, 1).Value = p.ThicknessMM;
+                rowPl++;
             }
 
             wb.Save();

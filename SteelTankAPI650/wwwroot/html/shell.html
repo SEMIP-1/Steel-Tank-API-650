@@ -1,0 +1,82 @@
+<div class="container">
+    <h2 class="mb-2">Shell Design (API 650)</h2>
+    <p class="text-muted">Enter tank basic data and define shell courses.</p>
+
+    <!-- =================== TANK PARAMETERS ====================== -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body row g-3">
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Tank Diameter (m)</label>
+                <input id="shell-diameter" class="form-control" type="number" step="0.01">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Liquid Height (m)</label>
+                <input id="shell-height" class="form-control" type="number" step="0.01">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Specific Gravity</label>
+                <input id="shell-sg" class="form-control" type="number" step="0.01" value="1.0">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Corrosion Allowance (mm)</label>
+                <input id="shell-ca" class="form-control" type="number" step="0.1" value="2">
+            </div>
+
+        </div>
+    </div>
+
+    <!-- =================== SHELL COURSES TABLE ====================== -->
+    <h4 class="mb-3">Shell Courses</h4>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle" id="course-table">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 90px;">Course #</th>
+                    <th style="width: 160px;">Height (m)</th>
+                    <th style="width: 240px;">Material Grade</th>
+                    <th style="width: 70px;"></th>
+                </tr>
+            </thead>
+            <tbody id="course-body"></tbody>
+        </table>
+    </div>
+
+    <button class="btn btn-secondary mb-4" id="btn-add-course">+ Add Course</button>
+
+    <!-- Template Row (hidden) -->
+    <template id="course-row-template">
+        <tr>
+            <td class="course-number"></td>
+
+            <td>
+                <input type="number" step="0.01"
+                       class="form-control course-height">
+            </td>
+
+            <td>
+                <select class="form-select course-material">
+                    <option value="">Loading...</option>
+                </select>
+            </td>
+
+            <td>
+                <button class="btn btn-danger btn-sm btn-remove-course">
+                    ✕
+                </button>
+            </td>
+        </tr>
+    </template>
+
+    <div>
+        <button class="btn btn-primary px-4" id="btn-shell-calc">
+            Calculate Shell
+        </button>
+    </div>
+
+    <div id="shell-result" class="mt-4"></div>
+</div>
